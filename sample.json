@@ -1,0 +1,38 @@
+[
+    {
+        "package": "main",
+        "structs": [
+            {
+                "name": "User",
+                "tags": ["json", "xml"],
+                "fields": {
+                    "Name": "string",
+                    "Email": "string"
+                },
+                "json": {
+                    "Name": "test"
+                },
+                "xml": {
+                }
+            },
+            {
+                "name": "Other",
+                "tags": ["json"],
+                "fields": {
+                    "Name": "string"
+                },
+                "json": {
+                    "Name": "otherTest"
+                }
+            }
+        ]
+    },
+    {
+        "package": "db",
+        "structs": [
+            {
+                "name": "Team"
+            }
+        ]
+    }
+]
