@@ -6,10 +6,12 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 type PackageStructs struct {
 	Package string       `json:"package"`
+	Imports []string     `json:"imports"`
 	Structs []StructInfo `json:"structs"`
 }
 
@@ -45,16 +47,51 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	for _, structItem := range infoMap {
+	for _, packageStructList := range infoMap {
+		var structBuilder strings.Builder
+		structBuilder.WriteString(fmt.Sprintf("package %s\n\n", packageStructList.Package))
+		if len(packageStructList.Imports) > 0 {
+			structBuilder.WriteString("imports (\n")
+			for _, importPackage := range packageStructList.Imports {
+				structBuilder.WriteString(fmt.Sprintf("\t\"%s\"\n", importPackage))
+			}
+			structBuilder.WriteString(")")
+		}
+
+		for _, structInfo := range packageStructList.Structs {
+			structBuilder.WriteString(fmt.Sprintf("\n\ntype %s struct {\n", structInfo.Name))
+			for field, dataType := range structInfo.Fields {
+				structBuilder.WriteString(fmt.Sprintf("\t%s %s ", field, dataType))
+				if len(structInfo.Tags) == 0 {
+					continue
+				}
+				var tagBuilder strings.Builder
+				for _, tagType := range structInfo.Tags {
+					tagValue := fmt.Sprintf("%s:\"%s\" ", tagType, strings.ToLower(field))
+					switch tagType {
+					case "json":
+						override, ok := structInfo.JSON[field]
+						if ok {
+							tagValue = fmt.Sprintf("json:\"%s\" ", override)
+						}
+					}
+					tagBuilder.WriteString(tagValue)
+				}
+				tagString := strings.TrimSpace(tagBuilder.String())
+				structBuilder.WriteString(fmt.Sprintf("`%s`\n", tagString))
+			}
+			structBuilder.WriteString("}\n")
+		}
+
 		packageDir := workDir
-		if structItem.Package != "main" {
-			packageDir = filepath.Join(workDir, structItem.Package)
+		if packageStructList.Package != "main" {
+			packageDir = filepath.Join(workDir, packageStructList.Package)
 		}
 		if err := os.MkdirAll(packageDir, os.ModePerm); err != nil {
 			log.Fatal(err)
 		}
 		structFile := filepath.Join(packageDir, "structs.tmp")
-		err = os.WriteFile(structFile, []byte(structItem.Package), os.ModePerm)
+		err = os.WriteFile(structFile, []byte(structBuilder.String()), os.ModePerm)
 		if err != nil {
 			log.Fatal(err)
 		}

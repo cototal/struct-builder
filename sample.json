@@ -1,6 +1,7 @@
 [
     {
         "package": "main",
+        "imports": ["strings", "os"],
         "structs": [
             {
                 "name": "User",
